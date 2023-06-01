@@ -5,6 +5,7 @@ on:
 
 env:
   RELEASER_CHANGER: 'regex-pattern:version = "$1"@Cargo.toml'
+  EXE_NAME: conventional-commitlint
 
 jobs:
   pre-build:
@@ -87,7 +88,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.triple }}
-          path: target/${{ matrix.triple }}/release/conventional-commitlint*
+          path: target/${{ matrix.triple }}/release/${{ env.EXE_NAME }}*
 
   publish:
     name: Publish to GitHub
@@ -143,7 +144,7 @@ jobs:
             for d in *; do
               pushd "$d"
                 ls
-                for f in vrc-get*; do
+                for f in "$EXE_NAME"*; do
                   mv $f "../../assets/$d-$f"
                 done
               popd
