@@ -1,9 +1,105 @@
+use std::env::args_os;
 use std::fmt::{Display, Formatter};
+use std::fs::File;
+use std::io::Read;
+use std::process::exit;
 
 mod git;
 
-fn main() {
-    println!("Hello, world!");
+#[tokio::main]
+async fn main() {
+    let mut args = args_os();
+    let cmd_name = args.next().expect("cmd name").into_string().unwrap();
+    match args.next().map(|x| x.into_string().unwrap()).as_deref() {
+        Some("--help" | "help") => print_help(cmd_name),
+        Some("edit") => {
+            let file = args.next().expect("no file specified");
+            let mut buffer = vec![];
+            File::open(file)
+                .expect("cannot open file")
+                .read_to_end(&mut buffer)
+                .expect("reading file");
+            let errors = check_commit_message(&buffer);
+            if !errors.is_empty() {
+                eprintln!("we found errors in commit message:");
+                print_errors(errors);
+                exit(1);
+            }
+        }
+        Some("check") => {
+            let git = git::GitRepository::new_cwd();
+            let head_name = args
+                .next()
+                .expect("no head specified")
+                .into_string()
+                .unwrap();
+            let base_name = args
+                .next()
+                .expect("no base specified")
+                .into_string()
+                .unwrap();
+            let head = git
+                .rev_parse(&head_name)
+                .await
+                .expect("error calling git")
+                .expect("unknown head ref");
+            let base = git
+                .rev_parse(&base_name)
+                .await
+                .expect("error calling git")
+                .expect("unknown base ref");
+
+            let mut have_err = false;
+
+            for commit_hash in git
+                .get_commits(head, base)
+                .await
+                .expect("get commit list failed")
+            {
+                let commit = git
+                    .get_commit(commit_hash)
+                    .await
+                    .expect("getting commit")
+                    .expect("not found");
+                let errors = check_commit_message(&commit.message);
+                if !errors.is_empty() {
+                    eprintln!("we found errors in commit message of {commit_hash}");
+                    print_errors(errors);
+                    have_err = true;
+                }
+            }
+            if have_err {
+                exit(1);
+            }
+        }
+        Some(cmd) => {
+            eprintln!("invalid command: {cmd}");
+            exit(1);
+        }
+        None => {
+            print_help(cmd_name);
+            exit(1);
+        }
+    }
+}
+
+fn print_errors(errors: Vec<MessageError>) {
+    for x in errors {
+        eprintln!("  {}", x);
+    }
+}
+
+fn print_help(cmd_name: String) {
+    eprintln!("Usage: {cmd_name} {{COMMAND}} [ARGUMENTS]");
+    eprintln!("single binary commitlint only for conventional");
+    eprintln!("version {}", env!("CARGO_PKG_VERSION"));
+    eprintln!();
+    eprintln!("COMMANDS:");
+    eprintln!("\thelp|--help: Show this help message");
+    eprintln!("\tedit: lint for commit-msg hook");
+    eprintln!("\t\tUsage: {cmd_name} edit {{file_path}}");
+    eprintln!("\tcheck: lint for ci");
+    eprintln!("\t\tUsage: {cmd_name} check {{HEAD_COMMIT}} {{BASE_COMMIT}}");
 }
 
 #[test]
@@ -24,11 +120,11 @@ fn check_commit_message_test() {
     test!(b"feat(scope)!: Test commit");
     test!(b"feat(scope)!: Test commit\n\nBREAKING CHANGES: breaking");
 
-    test!(b"\xff",NotUtf8);
-    test!(b"Message Only",HeaderNotFormatted);
-    test!(b"feat(not closed scope",HeaderNotFormatted);
-    test!(b"feat:no space after colon",HeaderNoSpaceAfterColon);
-    test!(b"FEAT: test",HeaderTypeNotLower);
+    test!(b"\xff", NotUtf8);
+    test!(b"Message Only", HeaderNotFormatted);
+    test!(b"feat(not closed scope", HeaderNotFormatted);
+    test!(b"feat:no space after colon", HeaderNoSpaceAfterColon);
+    test!(b"FEAT: test", HeaderTypeNotLower);
     test!(b"tag: Test commit", HeaderUnknownType("tag".to_string()));
     test!(b"fix: Not trimmed ", HeaderSubjectNotTrimmed);
     test!(b"fix:  Not trimmed", HeaderSubjectNotTrimmed);
