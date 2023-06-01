@@ -19,7 +19,6 @@ jobs:
             setup: sudo apt update && sudo apt install -y musl-tools
         runs-on:
           - ubuntu-latest
-          - windows-latest
 
     runs-on: ${{ matrix.runs-on }}
 
