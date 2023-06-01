@@ -82,7 +82,7 @@ jobs:
         run: cargo install cross
 
       - name: Build
-        run: ${{ matrix.cross && "cross" || "cargo" }} build --verbose --target ${{ matrix.triple }} --release
+        run: ${{ matrix.cross && 'cross' || 'cargo' }} build --verbose --target ${{ matrix.triple }} --release
 
       - uses: actions/upload-artifact@v3
         with:
