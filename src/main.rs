@@ -6,6 +6,47 @@ fn main() {
     println!("Hello, world!");
 }
 
+#[test]
+fn check_commit_message_test() {
+    macro_rules! test {
+        ($message: literal$(, $err: ident $(( $($parm: expr),* $(,)? ))? )* $(,)?) => {
+            assert_eq!(
+                check_commit_message($message),
+                vec![
+                    $(MessageError::$err $(( $($parm),* ))? ),*
+                ]
+            );
+        };
+    }
+
+    test!(b"feat: Test commit");
+    test!(b"feat(scope): Test commit");
+    test!(b"feat(scope)!: Test commit");
+    test!(b"feat(scope)!: Test commit\n\nBREAKING CHANGES: breaking");
+
+    test!(b"\xff",NotUtf8);
+    test!(b"Message Only",HeaderNotFormatted);
+    test!(b"feat(not closed scope",HeaderNotFormatted);
+    test!(b"feat:no space after colon",HeaderNoSpaceAfterColon);
+    test!(b"FEAT: test",HeaderTypeNotLower);
+    test!(b"tag: Test commit", HeaderUnknownType("tag".to_string()));
+    test!(b"fix: Not trimmed ", HeaderSubjectNotTrimmed);
+    test!(b"fix:  Not trimmed", HeaderSubjectNotTrimmed);
+    // \xE3\x80\x80: U+3000
+    test!(b"fix: \xE3\x80\x80Not trimmed", HeaderSubjectNotTrimmed);
+
+    test!(b"fix: I fixed some bug", HeaderSubjectMustNotASentence);
+    test!(b"fix: We fixed some bug", HeaderSubjectMustNotASentence);
+    test!(b"fix: You cannot use that", HeaderSubjectMustNotASentence);
+    test!(b"fix: ", HeaderSubjectEmpty);
+    test!(b"fix:", HeaderSubjectEmpty);
+    test!(b"feat(scope)!: Test commit\nmessage", NoEmptyLineBeforeBody);
+    test!(
+        b"feat(scope): Test commit\n\nBREAKING CHANGES: breaking",
+        NoBangInBreakingChangeCommit,
+    );
+}
+
 fn check_commit_message(title: &[u8]) -> Vec<MessageError> {
     let Ok(title) = std::str::from_utf8(title) else {
         return vec![MessageError::NotUtf8]
@@ -127,7 +168,7 @@ fn check_header(line: &str, errors: &mut Vec<MessageError>) -> Option<bool> {
     parsed.map(|x| x.2)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 enum MessageError {
     NotUtf8,
 
