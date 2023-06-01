@@ -87,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.triple }}
-          path: target/${{ matrix.triple }}/release/vrc-get*
+          path: target/${{ matrix.triple }}/release/conventional-commitlint*
 
   publish:
     name: Publish to GitHub
