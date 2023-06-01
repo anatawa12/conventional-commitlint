@@ -113,9 +113,9 @@ fn check_header(line: &str, errors: &mut Vec<MessageError>) -> Option<bool> {
         Some((ty, scope, is_breaking, rest))
     }
 
-    let parsed = parse(line);
+    let mut parsed = parse(line);
 
-    if let Some((ty, _, _, subject)) = parsed {
+    if let Some((ty, _, _, ref mut subject)) = parsed {
         let ty_lower = ty.to_ascii_lowercase();
         if ty_lower != ty {
             errors.push(MessageError::HeaderTypeNotLower);
@@ -136,14 +136,18 @@ fn check_header(line: &str, errors: &mut Vec<MessageError>) -> Option<bool> {
         ) {
             errors.push(MessageError::HeaderUnknownType(ty.to_string()));
         }
-        if !(subject.starts_with(" ")) {
+        if *subject == "" {
+            // fix
+        } else if subject.starts_with(" ") {
+            *subject = &subject[1..];
+        } else {
             errors.push(MessageError::HeaderNoSpaceAfterColon);
         }
     } else {
         errors.push(MessageError::HeaderNotFormatted);
     }
 
-    let subject = parsed.map(|x| x.3.trim_start_matches(" ")).unwrap_or(line);
+    let subject = parsed.map(|x| x.3).unwrap_or(line);
 
     let trimmed_subject = subject.trim();
     if trimmed_subject != subject {
