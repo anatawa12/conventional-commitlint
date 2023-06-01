@@ -50,10 +50,10 @@ jobs:
           # for linux, use cross on ubuntu-latest
           - triple: x86_64-unknown-linux-musl
             on: ubuntu-latest
-            setup: sudo apt update && sudo apt install -y musl-tools
+            cross: true
           - triple: aarch64-unknown-linux-musl
             on: ubuntu-latest
-            setup: sudo apt update && sudo apt install -y musl-tools
+            cross: true
           # for windows, without cross
           - triple: x86_64-pc-windows-msvc
             on: windows-latest
@@ -78,10 +78,11 @@ jobs:
           target-dir: target
           key: ${{ matrix.triple }}
       - name: Setup
-        run: ${{ matrix.setup }}
+        if: matrix.cross
+        run: cargo install cross
 
       - name: Build
-        run: cargo build --verbose --target ${{ matrix.triple }} --release
+        run: ${{ matrix.cross && "cross" || "cargo" }} build --verbose --target ${{ matrix.triple }} --release
 
       - uses: actions/upload-artifact@v3
         with:
