@@ -157,6 +157,8 @@ fn check_commit_message(title: &[u8]) -> Vec<MessageError> {
         b"Merge HEAD ",
         // revert
         b"Revert \"",
+        // merge pull request
+        b"Merge pull request #",
     ];
     for prefix in prefixes {
         if title.starts_with(prefix) {
