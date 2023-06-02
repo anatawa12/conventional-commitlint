@@ -144,6 +144,24 @@ fn check_commit_message_test() {
 }
 
 fn check_commit_message(title: &[u8]) -> Vec<MessageError> {
+    for prefix in [
+        // merge: see fmt_merge_msg_title in fmt-merge-msg.c
+        b"Merge branch ",
+        b"Merge branches ",
+        b"Merge remote-tracking branch ",
+        b"Merge remote-tracking branches ",
+        b"Merge tag ",
+        b"Merge tags ",
+        b"Merge commit ",
+        b"Merge commits ",
+        b"Merge HEAD ",
+        // revert
+        b"Revert \"",
+    ] {
+        if title.starts_with(prefix) {
+            return vec![]
+        }
+    }
     let Ok(title) = std::str::from_utf8(title) else {
         return vec![MessageError::NotUtf8]
     };
