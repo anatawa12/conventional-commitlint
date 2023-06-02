@@ -144,7 +144,7 @@ fn check_commit_message_test() {
 }
 
 fn check_commit_message(title: &[u8]) -> Vec<MessageError> {
-    for prefix in [
+    let prefixes: &[&[u8]] = &[
         // merge: see fmt_merge_msg_title in fmt-merge-msg.c
         b"Merge branch ",
         b"Merge branches ",
@@ -157,7 +157,8 @@ fn check_commit_message(title: &[u8]) -> Vec<MessageError> {
         b"Merge HEAD ",
         // revert
         b"Revert \"",
-    ] {
+    ];
+    for prefix in prefixes {
         if title.starts_with(prefix) {
             return vec![]
         }
