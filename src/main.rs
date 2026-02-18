@@ -159,6 +159,8 @@ fn check_commit_message(title: &[u8]) -> Vec<MessageError> {
         b"Revert \"",
         // merge pull request
         b"Merge pull request #",
+        // GitHub Copilot first empty commit
+        b"Initial plan",
     ];
     for prefix in prefixes {
         if title.starts_with(prefix) {
