@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: anatawa12/something-releaser@v2
       - uses: snow-actions/git-config-user@v1.0.0
       - uses: dtolnay/rust-toolchain@stable
@@ -68,16 +68,15 @@ jobs:
     runs-on: ${{ matrix.on }}
     needs: [pre-build]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: 'releasing'
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.triple }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
-          target-dir: target
-          key: ${{ matrix.triple }}
+          shared-key: ${{ matrix.triple }}
       - name: Setup
         if: matrix.cross
         run: cargo install cross
@@ -85,7 +84,7 @@ jobs:
       - name: Build
         run: ${{ matrix.cross && 'cross' || 'cargo' }} build --verbose --target ${{ matrix.triple }} --release
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.triple }}
           path: target/${{ matrix.triple }}/release/${{ env.EXE_NAME }}*
@@ -100,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [pre-build, build-rust]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: 'releasing'
           fetch-depth: 2
@@ -109,13 +108,9 @@ jobs:
       # tools
       - uses: anatawa12/something-releaser@v2
       - uses: snow-actions/git-config-user@v1.0.0
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: outputs
 
