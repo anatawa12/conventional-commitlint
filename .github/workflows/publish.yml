@@ -84,7 +84,7 @@ jobs:
       - name: Build
         run: ${{ matrix.cross && 'cross' || 'cargo' }} build --verbose --target ${{ matrix.triple }} --release
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.triple }}
           path: target/${{ matrix.triple }}/release/${{ env.EXE_NAME }}*
@@ -110,7 +110,7 @@ jobs:
       - uses: snow-actions/git-config-user@v1.0.0
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: outputs
 
